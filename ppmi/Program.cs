@@ -15,6 +15,7 @@ namespace ppmi
             string[] files = { @"text.txt" };
             int[,] coocurrenceMatrix;
             double[,] ppmiMatrix;
+            double[,] cosineSimilarityMatrix;
             int windowSize = 4;            
             List<string> dictionary = new List<string>();
 
@@ -32,6 +33,11 @@ namespace ppmi
             ppmiMatrix = CalculatePpmiMatrix(coocurrenceMatrix);
             timer.Stop();
             Console.WriteLine("PPMI Matrix Generated in {0}s.", timer.Elapsed);
+
+            timer.Restart();
+            cosineSimilarityMatrix = CalculateCosineSimilarityMatrix(ppmiMatrix);
+            timer.Stop();
+            Console.WriteLine("Cosine Similarity Matrix Generated in {0}s.", timer.Elapsed);
         }
 
         static List<string> GenerateDictionary(string[] files)
@@ -90,6 +96,19 @@ namespace ppmi
             return tempPpmiMatrix;
         }
 
+        static double[,] CalculateCosineSimilarityMatrix(double[,] ppmiMatrix)
+        {
+            double[,] tempSimilarityMatrix = new double[ppmiMatrix.GetLength(0), ppmiMatrix.GetLength(1)];
+
+            for (int i = 0; i < ppmiMatrix.GetLength(0); i++)
+                for (int j = i; j < ppmiMatrix.GetLength(1); j++)
+                {
+                    tempSimilarityMatrix[i, j] = CalculateCosineSimilarity(ppmiMatrix, i, j);
+                    tempSimilarityMatrix[j, i] = tempSimilarityMatrix[i, j];
+                }
+            return tempSimilarityMatrix;
+        }
+
         static int GetDenominator(int[,] matrix)
         {
             int result = 0;
@@ -116,6 +135,25 @@ namespace ppmi
 
             p = Math.Log((p1 / (p2 * p3)), 2);
             return (p < 0 || Double.IsNaN(p)) ? 0 : p;
+        }
+
+        static double CalculateCosineSimilarity(double[,] ppmiMatrix, int i, int j)
+        {
+            double sumOfProducts = 0;
+            double sumOfSquaredFirstRow = 0;
+            double sumOfSquaredSecondRow = 0;
+            double cosineSimilarity = 0;
+
+            for (int x = 0; x < ppmiMatrix.GetLength(0); x++)
+            {
+                sumOfProducts += ppmiMatrix[i, x] * ppmiMatrix[j, x];
+                sumOfSquaredFirstRow += ppmiMatrix[i, x] * ppmiMatrix[i, x];
+                sumOfSquaredSecondRow += ppmiMatrix[j, x] * ppmiMatrix[j, x];
+            }
+
+            cosineSimilarity = sumOfProducts / (Math.Sqrt(sumOfSquaredFirstRow) * Math.Sqrt(sumOfSquaredSecondRow));
+
+            return cosineSimilarity;
         }
     }
 }
